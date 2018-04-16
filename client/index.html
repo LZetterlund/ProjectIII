@@ -1,0 +1,612 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <style>
+    label, span{
+        font-family: Verdana, Roboto, sans-serif;
+      	font-size: 16px;
+      	padding-right:2em;
+        padding-left:2em;
+      }
+        body{
+            background-color: #d3d3d3;       
+        }
+
+        select, input{
+            background-color: #d3d3d3;
+            font-family: Verdana, Roboto, sans-serif;
+        }
+        p{
+            font-family: Roboto, Arial, sans-serif;
+            padding-bottom: 0;
+            margin-bottom: 0; 
+            font-weight: 900;
+        }
+        .highlightedPlayer{
+            border-width: 75px;
+            border-style: double;
+            visibility: visible;
+        }
+        .backgroundPlayer{
+            visibility: hidden;
+        }
+        .countdownText{
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+        
+        #startGame{
+            position: fixed;
+            font-size: 40px;
+            z-index: 101;
+            left: 42%;
+            top: 35%;
+        }
+        
+        #voterText{
+            font-family: Roboto, Arial, sans-serif;
+            position: fixed;
+            font-size: 250%;
+            z-index: 103;
+            left: 35%;
+            top: 50%;
+        }
+        
+        #guessText{
+            font-size: 30px;
+            position: fixed;
+            left: 35%;
+            top: 65%;
+        }
+        
+        #guessButton{
+            font-size: 40px;
+            position: fixed;
+            left: 59%;
+            top: 65%;
+        }
+
+        #lobbyScreen{
+            width: 100%;
+            height: 100%;
+            background-color:aqua;
+            position: fixed;
+            padding: 0;
+            margin: 0;
+            top: 0;
+            left: 0;
+            z-index: 100;
+            display: none;
+        }
+        
+        #lobbyText{
+            font-family: Roboto, Arial, sans-serif;
+            position: fixed;
+            font-size: 400%;
+            z-index: 101;
+            left: 15%;
+            top: 15%;
+            display: none;
+        }
+        
+        #lobbySubtext{
+            font-family: Roboto, Arial, sans-serif;
+            position: fixed;
+            font-size: 300%;
+            z-index: 101;
+            left: 15%;
+            top: 30%;
+            display: none;
+        }
+        
+        #advertisment{
+            font-family: Roboto, Arial, sans-serif;
+            position: fixed;
+            font-size: 300%;
+            left: 15%;
+            top: 45%;
+            height: 30%;
+            width: 60%;
+            display: none;
+            background-color: crimson;
+        }
+        
+        #roomSelectScreen{
+            width: 100%;
+            height: 100%;
+            background-color:darkturquoise;
+            position: fixed;
+            padding: 0;
+            margin: 0;
+            top: 0;
+            left: 0;
+            z-index: 102;
+        }
+        
+        #room{
+            position: fixed;
+            margin-left: 20px;
+            font-size: 30px;
+            z-index: 103;
+            left: 35%;
+            top: 50%;
+        }
+        
+        #roomEnter{
+            position: fixed;
+            font-size: 30px;
+            z-index: 103;
+            left: 59%;
+            top: 50%;
+        }
+        
+        #titleText{
+            font-family: Roboto, Arial, sans-serif;
+            position: fixed;
+            font-size: 400%;
+            z-index: 103;
+            left: 20%;
+            top: 20%;
+        }
+        
+        #titleSubtext{
+            font-family: Roboto, Arial, sans-serif;
+            position: fixed;
+            font-size: 250%;
+            z-index: 103;
+            left: 20%;
+            top: 30%;
+        }
+        
+        #player1Canvas, #player2Canvas{
+            
+        }
+        
+        #correctUsers{
+            position: fixed;
+            left: 950px;
+            top: 150px;
+        }
+        
+        #answer{
+            font-family: Roboto, Arial, sans-serif;
+            position: relative;
+            font-size: 400%;
+            display: none;
+        }
+    </style>
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="https://npmcdn.com/babel-core@5.8.38/browser.min.js"></script>
+    <script type="text/babel" >
+        "use strict";
+        let canvas = document.getElementById("canvas");
+        let ctx = canvas.getContext("2d");
+        let player1Canvas = document.getElementById("player1Canvas");
+        let player1Ctx = player1Canvas.getContext("2d");
+        let player2Canvas = document.getElementById("player2Canvas");
+        let player2Ctx = player2Canvas.getContext("2d");
+        let dragging = false;
+        let strokeStyleSelector = document.querySelector('#strokeStyleSelector');
+        let eraser = document.querySelector('#eraseButton');
+        let user;
+        let enterRoomButton = document.getElementById("roomEnter");
+        let room;
+        let roomTextBox = document.getElementById("room");
+        let startGameButton = document.getElementById("startGame");
+        let guess;
+        let enterGuessButton = document.getElementById("guessButton");
+        let guessTextBox = document.getElementById("guessText");
+        let score;
+        let correctUsersTextBox = document.getElementById("correctUsers");
+        let isVoter = false;
+
+        const socket = io.connect();
+
+        const connectSocket = (e) => {
+            socket.on('connect', () => {
+                console.log('waiting for room to enter');
+            });
+
+            socket.on('draw', (data) => {
+                console.log(data);
+                handleMessage(data);
+            });
+            
+            socket.on('UI', (data) => {
+               setUI(data); 
+            });
+            
+            socket.on('doDisconnect', (data) => {
+               disconnect(); 
+            });
+            
+            socket.on('failedToJoin', (data) => {
+               failedToJoinGame(); 
+            });
+            
+            socket.on('startCountdown', () => {
+               startCountdown(5); 
+            });
+            
+            socket.on('changeHighlighted', (data) => {
+               changeHighlight(data); 
+            });
+            
+            socket.on('guessOutcome', (data) => {
+               guessOutcome(data); 
+            });
+            
+            socket.on('endTheRound', () => {
+               endTheRound(); 
+            });
+            
+            socket.on('failedToStart', () => {
+               failedToStart(); 
+            });
+            
+            socket.on('endLobby', (data) => {
+               endLobby(data); 
+            });
+        };
+
+        //triggered when player cannot start because lobby is not full enough
+        const failedToStart = () => {
+          document.getElementById("lobbyText").innerHTML = "You need at least 3 players to start a game!";  
+        };
+
+        //triggered when player attempts to join a game thats currently running or full lobby
+        const failedToJoinGame = () => {
+            console.log("Failed to join " + room);
+            //reverse all UI changes, join failed
+            document.getElementById("room").disabled = false;
+            document.getElementById("room").value = null;
+            room = null;
+            enterRoomButton.style.display = 'inline';
+            startGameButton.style.visibility = 'hidden';
+            document.getElementById("lobbyScreen").style.display = "none";
+            document.getElementById("lobbyText").style.display = "none";
+            document.getElementById("lobbySubtext").style.display = "none";
+        };
+
+        //called when player attempts to join a room
+        const enterRoom = () => {
+            room = document.getElementById("room").value;
+            console.log(room);
+            if(room != null){
+                const data = { userID: user, roomID: room };
+                socket.emit('join', data);
+            }
+            //fix UI after game joined
+            document.getElementById("roomSelectScreen").style.display = "none";
+            document.getElementById("titleText").style.display = "none";
+            document.getElementById("titleSubtext").style.display = "none";
+            roomTextBox.disabled = true;
+            roomTextBox.style.display = "none";
+            enterRoomButton.style.display = 'none';
+            startGameButton.style.visibility = 'visible';
+            document.getElementById("lobbyScreen").style.display = "block";
+            document.getElementById("lobbyText").style.display = "inline";
+            document.getElementById("lobbySubtext").style.display = "inline";
+        };
+
+        //called when player hits start game in a lobby
+        const startGame = () => {
+            const data = { userID: user, roomID: room };
+            socket.emit('startGame', data);
+        };
+
+        //the countdown called at the beginning of the game to signal a start
+        const startCountdown = (currentNum) => {
+            var mainDiv = document.getElementById("mainDiv");
+            if(currentNum > 0){
+                console.log(currentNum);
+                document.getElementById("lobbyText").innerHTML = "Starting in " + currentNum + "...";
+                currentNum--;
+                setTimeout(function(){ startCountdown(currentNum) }, 1500);
+            }
+            else{
+                document.getElementById("lobbyText").innerHTML = "Starting...";
+            }
+        };
+
+        const changeHighlight = (data) => {
+            if(isVoter == true){
+                //changes which player will be shown to the audience at a given time
+                if(player1Canvas.className == "highlightedPlayer"){
+                    player1Canvas.className = "backgroundPlayer";
+                    player2Canvas.className = "highlightedPlayer";
+                }
+                else{
+                    player2Canvas.className = "backgroundPlayer";
+                    player1Canvas.className = "highlightedPlayer";
+                }
+                guessTextBox.style.visibility = "visible";
+                enterGuessButton.style.visibility = "visible";
+                document.getElementById("voterText").style.visibility = "visible";
+            }
+            else{
+                document.getElementById("answer").style.display = "block";
+                document.getElementById("answer").innerHTML = "This round try to draw a " + data.answerID + "."
+            }
+            
+            //TODO: get rid of lobby screen
+            document.getElementById("lobbyScreen").style.display = "none";
+            document.getElementById("lobbyText").style.display = "none";
+            document.getElementById("lobbySubtext").style.display = "none";
+        };
+
+        //This is where the guesses go to meet their fate, true is correct, false is incorrect
+        const guessOutcome = (data) => {
+            //if the current guess outcome is coming from yourself, display the CORRECT and WRONG text
+            if(data.guessAnswer == true){
+                if(data.userID == user){
+                    score = score + 10;
+                    guessTextBox.disabled = true;
+                    guessTextBox.placeholder = "Correct!";
+                    enterGuessButton.style.visibility = "hidden";
+                    console.log(score);
+                }
+               if(data.drawerID == user){
+                    score = score + 10;
+                    console.log(score);
+                }
+                correctUsersTextBox.innerHTML += "<br>" + data.userID;
+            }
+        };
+
+        //TODO: Use this method to properly change the elements around on the screen to work
+        const setUI = (data) => {
+            console.log("IsPlayer1: " + data.player1 + ", " + "IsPlayer2: " + data.player2);
+            if(data.player1 == user) {
+                document.getElementById("playerRole").innerHTML = "You are Drawer 1.";
+                document.getElementById("lobbySubtext").innerHTML = "You are Drawer 1.";
+                //remove voter elements
+                guessTextBox.style.display = "none";
+                guessTextBox.disabled = true;
+                enterGuessButton.style.display = "none";
+                player1Canvas.classList.remove("highlightedPlayer");
+                player2Canvas.classList.remove("backgroundPlayer");
+                player1Canvas.style.display = "none";
+                player2Canvas.style.display = "none";
+                document.getElementById("p1Text").style.display = "none";
+                document.getElementById("p2Text").style.display = "none";
+            }
+            if(data.player2 == user) {
+                document.getElementById("playerRole").innerHTML = "You are Drawer 2.";
+                document.getElementById("lobbySubtext").innerHTML = "You are Drawer 2.";
+                //remove voter elements
+                guessTextBox.style.display = "none";
+                guessTextBox.disabled = true;
+                enterGuessButton.style.display = "none";
+                player1Canvas.classList.remove("highlightedPlayer");
+                player2Canvas.classList.remove("backgroundPlayer");
+                player1Canvas.style.display = "none";
+                player2Canvas.style.display = "none";
+                document.getElementById("p1Text").style.display = "none";
+                document.getElementById("p2Text").style.display = "none";
+            }
+            if(data.player1 != user && data.player2 != user) {
+                document.getElementById("playerRole").innerHTML = "You are a viewer/voter.";
+                document.getElementById("lobbySubtext").innerHTML = "You are a viewer/voter.";
+                canvas.style.display = "none";
+                strokeStyleSelector.style.display = "none";
+                eraser.style.display = "none";
+                document.getElementById("strokeLabel").style.display = "none";
+                document.getElementById("eraserLabel").style.display = "none";
+                isVoter = true;
+            }
+            
+            startGameButton.style.visibility = 'hidden';
+        };
+
+        const enterGuess = () => {
+            guess = guessTextBox.value;
+            const data = { userID: user, roomID: room, guessID: guess };
+            socket.emit('enterGuess', data);
+            guessTextBox.value = null;
+        };
+
+        //when the round is over
+        const endTheRound = () => {
+          const data = { 
+            userID: user,
+            roomID: room,
+            scoreID: score
+          }
+          socket.emit('sendScore', data);
+        };
+
+        const endLobby = (data) => {
+            document.getElementById('voterText').style.display = "none";
+            document.getElementById("lobbyScreen").style.display = "block";  
+            document.getElementById("lobbyText").style.display = "block";
+            document.getElementById("lobbyText").innerHTML = "The winner is... " + data.winnerID + "!";
+            document.getElementById("lobbySubtext").style.display = "block";
+            document.getElementById("lobbySubtext").innerHTML = "With a score of " + data.topScoreID + "!";
+            document.getElementById("lobbySubtext").innerHTML += "<br><br>You were " + user + ", " + "and got a score of " + score;
+            document.getElementById("lobbySubtext").innerHTML += "<br><br><br>THIS IS THE ADVERTISMENT PAGE!";
+            document.getElementById("lobbySubtext").innerHTML += "<br><br>ADVERTISMENT HERE!";
+            //document.getElementById("advertisment").style.display = "block";
+        };
+
+        const handleMessage = (data) => {
+
+            let image = new Image();
+            image.src = data.imgData;
+
+            image.onload = () => {
+                console.log("player1Check: " + data.isPlayer1 + "player2Check: " + data.isPlayer2);
+                //displays the players drawings on only one canvas
+                if(data.isPlayer1 == true){
+                    player1Ctx.save();
+                    player1Ctx.globalCompositeOperation = "source-over"; //this is default for canvas-->
+                    player1Ctx.drawImage(image, data.x, data.y, data.width, data.height);    
+                    player1Ctx.restore();
+                }
+                else{ 
+                    if(data.isPlayer2 == true){
+                        player2Ctx.save();
+                        player2Ctx.globalCompositeOperation = "source-over"; //this is default for canvas-->
+                        player2Ctx.drawImage(image, data.x, data.y, data.width, data.height);    
+                        player2Ctx.restore();
+                    }
+                }
+            };
+        }
+
+        const init = () => {
+        //Paint canvas white and update to clear any drawings from a past player
+          ctx.fillStyle="white";
+          ctx.fillRect(0,0,900, 600);
+          doMouseout();
+          //Hook up event listeners
+		  canvas.onmousedown = doMousedown;
+		  canvas.onmousemove = doMousemove;
+		  canvas.onmouseup = doMouseup;
+		  canvas.onmouseout = doMouseout;
+          enterRoomButton.onclick = enterRoom;
+          startGameButton.onclick = startGame;
+          enterGuessButton.onclick = enterGuess;
+          roomTextBox.addEventListener("keyup", function(e) {
+              event.preventDefault();
+              if(event.keyCode == 13) {
+                  enterRoomButton.click();
+              }
+          });
+          guessTextBox.addEventListener("keyup", function(e) {
+              event.preventDefault();
+              if(event.keyCode == 13) {
+                  enterGuessButton.click();
+              }
+          });
+          user = `user${(Math.floor((Math.random()*100000)) + 1)}`;
+          score = 0;
+          connectSocket();
+        };
+
+	const doMousedown = (mouseData) => {
+	    dragging = true;
+
+	    //get location off mouse in cannvas coordinates
+	    var mouse = getMouse(mouseData);
+	     ctx.beginPath();
+	     ctx.moveTo(mouse.x, mouse.y);
+	}
+
+    const doMousemove = (mouseData) => {
+ 	    //bail out if the mouse button is not down
+ 	    if (!dragging) return;
+
+ 	    //get location of mouse in canvas coordinates
+ 	    var mouse = getMouse(mouseData);
+
+ 	      // set ctx.strokeStyle and ctx.lineWidth to correct values and switch if eraser
+ 	      ctx.strokeStyle = strokeStyleSelector.value;
+ 	      ctx.lineWidth = 5;
+          if(eraser.checked == true) {
+              ctx.strokeStyle = "white";
+              ctx.lineWidth = 15;
+          }
+
+ 	      //draw a line to x,y of mouse
+ 	      ctx.lineTo(mouse.x, mouse.y);
+
+ 	      //stroke the line
+ 	      ctx.stroke();
+    }
+
+    const doMouseup = () => {
+	   ctx.closePath();
+       dragging = false;
+            const data = {
+                x: 0,
+                y: 0,
+                height: 400,
+                width: 600, 
+                imgData: canvas.toDataURL(),
+                userID: user,
+                roomID: room
+            };
+        socket.emit("update", data);
+    }
+
+	const doMouseout = () => {
+       ctx.closePath();
+	   dragging = false;
+        const data = {
+                x: 0,
+                y: 0,
+                height: 400,
+                width: 600, 
+                imgData: canvas.toDataURL(),
+                userID: user,
+                roomID: room
+            };
+        socket.emit("update", data);
+	}
+    
+    //This method originally written by Tony Jefferson (IGM)
+	const getMouse = (mouseData) => {
+		var mouse = {}
+		mouse.x = mouseData.pageX - mouseData.target.offsetLeft;
+		mouse.y = mouseData.pageY - mouseData.target.offsetTop;
+		return mouse;
+	}
+    
+    //clear canvas and disconnect from server
+    const disconnect = () => {
+        ctx.fillStyle="white";
+        ctx.fillRect(0,0,900, 600);
+        const data = {
+                x: 0,
+                y: 0,
+                height: 400,
+                width: 600, 
+                imgData: canvas.toDataURL(),
+                userID: user,
+                roomID: room
+            };
+        socket.emit("update", data);
+        socket.emit("discPlayers", data);
+    }
+
+        window.onload = init;
+    </script>
+</head>
+<body>
+    <p id="playerRole"></p>
+    <p id="correctUsers" >Correct Guessers: </p>
+    <canvas id="canvas" width="900" height="600" style="border: 1px solid black; display: inline;"></canvas><br/>
+            <label id="strokeLabel">
+            Stroke Color:
+            <select id="strokeStyleSelector">
+                <option value="black">Black</option>
+                <option value="red">Red</option>
+                <option value="green">Green</option>
+                <option value="blue">Blue</option>
+            </select>
+        </label>
+        <span id="eraserLabel">Eraser<input id="eraseButton" type="checkbox" value="Eraser"/></span>
+    <h1 id="answer"></h1>
+    <p id="p1Text">Player 1's Drawing</p>
+    <canvas id="player1Canvas" class="highlightedPlayer" width="600" height="400" style="border: 1px solid black;"></canvas><br/>
+    <p id="p2Text">Player 2's Drawing</p>
+    <canvas id="player2Canvas" class="backgroundPlayer" width="600" height="400" style="border: 1px solid black;"></canvas><br/>
+    <input type="text" id="guessText" placeholder="Enter guess:" style="visibility: hidden;">
+    <input type="button" id="guessButton" value="Enter guess" style="visibility: hidden;">
+    <h1 id="voterText"style="visibility: hidden;">What are the drawers attempting to draw?</h1>
+    <input type="button" id="startGame" value="Start Game" style="visibility: hidden;">
+    <div id="lobbyScreen"></div>
+    <h1 id="lobbyText">When all players are ready hit Start Game!</h1>
+    <h2 id="lobbySubtext"></h2>
+    <div id="advertisment">Advertisment here!</div>
+    <div id="roomSelectScreen"></div>
+    <h1 id="selectRoomDisplay"></h1>
+    <input type="text" id="room" placeholder="Enter room name:">
+    <input type="button" id="roomEnter" value="Lock into room">
+    <h1 id="titleText">Welcome to: Not a Jackbox Game!</h1>
+    <h2 id="titleSubtext">Enter room name and lock in to continue!</h2>
+</body>
+</html>
