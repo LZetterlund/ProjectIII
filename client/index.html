@@ -201,6 +201,7 @@
         let score;
         let correctUsersTextBox = document.getElementById("correctUsers");
         let isVoter = false;
+        let currentInk = 500;
 
         const socket = io.connect();
 
@@ -486,6 +487,10 @@
           connectSocket();
         };
 
+    const useInk = () => {
+        //increment ink usage while player is dragging with mous down
+    }
+
 	const doMousedown = (mouseData) => {
 	    dragging = true;
 
@@ -515,6 +520,9 @@
 
  	      //stroke the line
  	      ctx.stroke();
+        
+          //use Ink
+        useInk();
     }
 
     const doMouseup = () => {

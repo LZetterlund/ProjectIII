@@ -256,6 +256,7 @@ io.sockets.on('connection', (socket) => {
   socket.on('sendScore', (data) => {
     processScores(data);
   });
+  // useInk server side later
 });
 
 console.log('Websocket server started');
