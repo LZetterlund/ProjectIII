@@ -1,113 +1,123 @@
-
-
 const http = require('http');
-const fs = require('fs');
 const socketio = require('socket.io');
+// MVC server to host our files
+const express = require('express');
+const path = require('path');
+// const fs = require('fs');
 
-const port = process.env.PORT || process.env.NODE_PORT || 3023;
+const port = process.env.PORT || process.env.NODE_PORT || 3092;
 
-// read the client html file into memory
-// __dirname in node is the current directory
-// (in this case the same folder as the server js file)
-const index = fs.readFileSync(`${__dirname}/../client/index.html`);
+const app = express();
 
-const onRequest = (request, response) => {
-  response.writeHead(200, { 'Content-Type': 'text/html' });
-  response.write(index);
-  response.end();
-};
+app.use('/assets', express.static(path.resolve(`${__dirname}/../hosted/`)));
 
-const app = http.createServer(onRequest).listen(port);
+app.get('/', (req, res) => {
+  res.sendFile(path.resolve(`${__dirname}/../hosted/index.html`));
+});
 
-console.log(`Listening on 127.0.0.1: ${port}`);
+// start http server and get HTTP server instance
+const server = http.createServer(app);
 
 // pass in the http server into socketio and grab the webscoket server as io
-const io = socketio(app);
+const io = socketio(server);
 
-// keep track of all different rooms
+server.listen(port, (err) => {
+  if (err) {
+    throw err;
+  }
+  console.log(`Listening on port ${port}`);
+});
+
+// hold every room in an array
 const rooms = [];
 
-// triggers when user joins a room
-const join = (data) => {
-// grab the room using the player entered room ID
-  const roomEntered = rooms.filter(obj => obj.ID === data.roomID);
-  // NEW check if first user, add one user either way
-  if (roomEntered[0].users !== undefined) {
-    // check to see if lobby is already full or if the game is already started
-    if (roomEntered[0].users >= 8 || roomEntered[0].gameStarted === true) {
-      // tell client that the join failed
-      io.sockets.in(data.roomID).emit('failedToJoin');
-    } else {
-      roomEntered[0].users++;
-    }
-  } else { roomEntered[0].users = 1; }
-  // ifthere are 8 or less users, check for players, else skip it
-  // check to see whether the user can be either first or second player
-  if (roomEntered[0].users <= 8) {
-    if (roomEntered[0].player1ID == null) {
-      console.log('Player 1 added');
-      roomEntered[0].player1ID = data.userID;
-    } else if (roomEntered[0].player2ID == null) {
-      console.log('Player 2 added');
-      roomEntered[0].player2ID = data.userID;
-    }
+// when player joins game
+const onJoined = (data) => {
+  // get current room from array of all rooms
+  const currentRoomArray = rooms.filter(obj => obj.ID === data.roomID);
+  const currentRoom = currentRoomArray[0];
+  // if username array doesn't exist, create it
+  if (currentRoom.usernames === undefined) {
+    currentRoom.usernames = [];
+  }
+  // stop joining the session at 8 players in lobby, or if game started
+  if (currentRoom.usernames.length >= 8 || currentRoom.gameStarted === true) {
+    io.sockets.in(data.roomID).emit('failedToJoin');
+  } else {
+    // object holding every username, create if doesn't exist
+    currentRoom.usernames[currentRoom.usernames.length] = { ID: data.userID };
   }
 };
 
 const endTheRound = (data) => {
-  // implement other end of round code here
+  // leaderboard?
   io.sockets.in(data.roomID).emit('endTheRound');
 };
 
-// this is used to send drawing data to other users
+// this is used to send drawing data to other players
 const update = (data) => {
-// grab the room using the player entered room ID
-  const roomEntered = rooms.filter(obj => obj.ID === data.roomID);
-  if (roomEntered[0] != null) {
+// get current room from array of all rooms
+  const currentRoomArray = rooms.filter(obj => obj.ID === data.roomID);
+  if (currentRoomArray[0] != null) {
+    const currentRoom = currentRoomArray[0];
+    // For the leaderboard
+    const currentUser = data.userID;
+    const first = currentRoom.firstID;
+    const second = currentRoom.secondID;
+    // canvas data
     const { x } = data;
     const { y } = data;
     const { height } = data;
     const { width } = data;
     const { imgData } = data;
-    // for which canvas the data should go to
-    const isPlayer1 = data.userID === roomEntered[0].player1ID;
-    const isPlayer2 = data.userID === roomEntered[0].player2ID;
-    // for debug purposes
-    const currentUser = data.userID;
-    const player1 = roomEntered[0].player1ID;
-    const player2 = roomEntered[0].player2ID;
+    // Seperate drawer's canvas'
+    const isFirst = data.userID === currentRoom.firstID;
+    const isSecond = data.userID === currentRoom.secondID;
 
     io.sockets.in(data.roomID).emit('draw', {
-      x, y, height, width, imgData, isPlayer1, isPlayer2, currentUser, player1, player2,
+      x, y, height, width, imgData, isFirst, isSecond, currentUser, first, second,
     });
   }
 };
 
+// used to reset for new games
+const startNewGame = (data) => {
+  // things to reset with a new game here
+  const currentRoomArray = rooms.filter(obj => obj.ID === data.roomID);
+  if (currentRoomArray[0] != null) {
+    // const currentRoom = currentRoomArray[0];
+  }
+  // send message to others
+  io.sockets.in(data.roomID).emit('newGame', data);
+};
+
+// This method originally written by Luke Zetterlund (IGM)
 const startRoundLoop = (data) => {
-  const roomEntered = rooms.filter(obj => obj.ID === data.roomID);
-  if (roomEntered[0] != null) {
-    console.log(roomEntered[0].rotateCount);
+  const currentRoomArray = rooms.filter(obj => obj.ID === data.roomID);
+  if (currentRoomArray[0] != null) {
+    const currentRoom = currentRoomArray[0];
+    console.log(currentRoom.rotateCount + data.userID);
     // Go through initial drawing period, if its been gone through, continue
-    if (roomEntered[0].initialDrawing !== undefined) {
-      setTimeout(startRoundLoop, 5000, data);
-      roomEntered[0].initialDrawing = true;
-      io.sockets.in(data.roomID).emit('changeHighlighted');
+    if (currentRoom.initialDrawing !== undefined) {
+      setTimeout(startRoundLoop, 8000, data);
+      currentRoom.initialDrawing = true;
+      io.sockets.in(data.roomID).emit('nextDrawing');
     } else {
       // After initial drawing begin flipping the highlighted drawings
-      if (roomEntered[0].rotateCount !== undefined) {
-        roomEntered[0].rotateCount++;
+      if (currentRoom.rotateCount !== undefined) {
+        currentRoom.rotateCount++;
       } else {
-        roomEntered[0].rotateCount = 0;
+        currentRoom.rotateCount = 0;
       }
 
       // tell clients to rotate highlighted drawing and give answer data to drawers
-      const answerData = { answerID: roomEntered[0].answer };
-      io.sockets.in(data.roomID).emit('changeHighlighted', answerData);
+      const answerData = { answerID: currentRoom.answer };
+      io.sockets.in(data.roomID).emit('nextDrawing', answerData);
 
       // if the drawings have rotated 5 times then end the round
       // start the set interval to switch drawings once the initial drawing period is up
-      if (roomEntered[0].rotateCount <= 5) {
-        setTimeout(startRoundLoop, 5000, data);
+      if (currentRoom.rotateCount <= 5) {
+        setTimeout(startRoundLoop, 8000, data);
       } else {
         endTheRound(data);
       }
@@ -116,67 +126,86 @@ const startRoundLoop = (data) => {
 };
 
 const startGame = (data) => {
-  // grab the room using the player entered room ID
-  const roomEntered = rooms.filter(obj => obj.ID === data.roomID);
-  if (roomEntered[0] != null) {
-    // TODO: FIX TO 3 BEFORE TURN IN, TEMP AT 1
-    if (roomEntered[0].users >= 3) {
+  // get current room from array of all rooms
+  const currentRoomArray = rooms.filter(obj => obj.ID === data.roomID);
+  if (currentRoomArray[0] != null) {
+    const currentRoom = currentRoomArray[0];
+    // restart rotatecount for new rounds at the end of games
+    currentRoom.rotateCount = 0;
+    // check to make sure no duplicate games get started
+    if (currentRoom.usernames.length >= 3) {
+      currentRoom.gameStarted = true;
+      // Select first and second randomly using a random username in the usernames array
+      currentRoom.firstID =
+          currentRoom.usernames[Math.floor((Math.random() * currentRoom.usernames.length))].ID;
+      console.log(`First:${currentRoom.firstID}`);
+      currentRoom.secondID =
+          currentRoom.usernames[Math.floor((Math.random() * currentRoom.usernames.length))].ID;
+      // while first equals second keep re-rolling until they are not the same
+      while (currentRoom.firstID === currentRoom.secondID) {
+        currentRoom.secondID =
+            currentRoom.usernames[Math.floor((Math.random() * currentRoom.usernames.length))].ID;
+      }
+      console.log(`Second:${currentRoom.secondID}`);
+
       const playerData =
         {
-          player1: roomEntered[0].player1ID,
-          player2: roomEntered[0].player2ID,
+          first: currentRoom.firstID,
+          second: currentRoom.secondID,
         };
       io.sockets.in(data.roomID).emit('UI', playerData);
-      roomEntered[0].gameStarted = true;
 
-      // TODO: HERE ADD THE TIMER CODE TO START THE ROUND / SWITCH BETWEEN ROUNDS
-      // TODO: REMEMBER TO EMIT A METHOD TO THE ROOM ON A "SETINTERVAL" METHOD
-      // TO CHANGE THE UI USING THE "changeHighlighted" method.
+      // Triggers "startCountdown" method and begins the game
       io.sockets.in(data.roomID).emit('startCountdown');
 
-      setTimeout(startRoundLoop, 7500, data);
-      // TODO: This is where the answer would change if I ever added that in.
-      roomEntered[0].answer = 'tree';
+      setTimeout(startRoundLoop, 6000, data);
+      // TODO: Change answer
+      currentRoom.answer = 'star';
     } else {
-      console.log('Failed to start game: not enough players');
+      console.log('Failed to start game: not enough players OR the game was started');
       io.sockets.in(data.roomID).emit('failedToStart', data);
     }
   }
 };
 
+// TODO: possibly remove users from username list when disconnected
 // used to pass data through and properly disconnect the drawers from the game
 const discPlayers = (data) => {
-// grab the room using the player entered room ID
-  const roomEntered = rooms.filter(obj => obj.ID === data.roomID);
+// get current room from array of all rooms
+  const currentRoomArray = rooms.filter(obj => obj.ID === data.roomID);
   // check if room exists as to not error out
-  if (roomEntered[0] != null) {
-    console.log(`CurrentUser: ${data.userID} Player1: ${roomEntered[0].player1ID} Player2: ${roomEntered[0].player2ID}`);
-    if (data.userID === roomEntered[0].player1ID) {
-      roomEntered[0].player1ID = null;
-      console.log(`disconnecting player 1 from room: ${roomEntered[0].ID}`);
+  if (currentRoomArray[0] != null) {
+    const currentRoom = currentRoomArray[0];
+    console.log(`CurrentUser: ${data.userID} First: ${currentRoom.firstID} Second: ${currentRoom.secondID}`);
+    if (data.userID === currentRoom.firstID) {
+      currentRoom.firstID = null;
+      console.log(`disconnecting first from room: ${currentRoom.ID}`);
     }
 
-    if (data.userID === roomEntered[0].player2ID) {
-      roomEntered[0].player2ID = null;
-      console.log(`disconnecting player 2 from room: ${roomEntered[0].ID}`);
+    if (data.userID === currentRoom.secondID) {
+      currentRoom.secondID = null;
+      console.log(`disconnecting second from room: ${currentRoom.ID}`);
     }
   }
 };
 
+// TODO: rewrite this method to include missed letters for answer OR chatroom
+// This method originally written by Luke Zetterlund
 const processGuess = (data) => {
-  const roomEntered = rooms.filter(obj => obj.ID === data.roomID);
+  const currentRoomArray = rooms.filter(obj => obj.ID === data.roomID);
   // check if room exists as to not error out
-  if (roomEntered[0] != null) {
-    // calculate whether it was player1 or player2's points
+  if (currentRoomArray[0] != null) {
+    const currentRoom = currentRoomArray[0];
+    // calculate whether it was first or second's points
     let drawer;
-    if (roomEntered[0].rotateCount % 2 === 1) {
-      drawer = roomEntered[0].player1ID;
+    if (currentRoom.rotateCount % 2 === 1) {
+      drawer = currentRoom.firstID;
     } else {
-      drawer = roomEntered[0].player2ID;
+      drawer = currentRoom.secondID;
     }
     const lesserCaseGuess = data.guessID.toString().toLowerCase();
     const guessData = {
-      guessAnswer: lesserCaseGuess === roomEntered[0].answer,
+      guessAnswer: lesserCaseGuess === currentRoom.answer,
       userID: data.userID,
       drawerID: drawer,
     };
@@ -184,23 +213,26 @@ const processGuess = (data) => {
   }
 };
 
-const processScores = (data) => {
-  const roomEntered = rooms.filter(obj => obj.ID === data.roomID);
+// TODO: redo this method a the leaderboard
+// This method originally written by Luke Zetterlund
+const getLeaderboard = (data) => {
+  const currentRoomArray = rooms.filter(obj => obj.ID === data.roomID);
   // check if room exists as to not error out
-  if (roomEntered[0] != null) {
-    if (roomEntered[0].topScore === undefined) {
-      roomEntered[0].topScorer = data.userID;
-      roomEntered[0].topScore = data.scoreID;
+  if (currentRoomArray[0] != null) {
+    const currentRoom = currentRoomArray[0];
+    if (currentRoom.topScore === undefined) {
+      currentRoom.topScorer = data.userID;
+      currentRoom.topScore = data.scoreID;
       console.log(`${data.userID} is new top score ${data.scoreID}`);
-    } else if (roomEntered[0].topScore < data.scoreID) {
-      roomEntered[0].topScorer = data.userID;
-      roomEntered[0].topScore = data.scoreID;
+    } else if (currentRoom.topScore < data.scoreID) {
+      currentRoom.topScorer = data.userID;
+      currentRoom.topScore = data.scoreID;
       console.log(`${data.userID} is new top score ${data.scoreID}`);
     }
 
     const scoreData = {
-      winnerID: roomEntered[0].topScorer,
-      topScoreID: roomEntered[0].topScore,
+      winnerID: currentRoom.topScorer,
+      topScoreID: currentRoom.topScore,
     };
 
     io.sockets.in(data.roomID).emit('endLobby', scoreData);
@@ -210,24 +242,30 @@ const processScores = (data) => {
 io.sockets.on('connection', (socket) => {
   console.log('started');
 
-  //  onJoined(socket);
-  // io.sockets.manager.room to check active rooms
   socket.on('join', (data) => {
     const room = data.roomID;
+    const user = data.userID;
     socket.room = room; // eslint-disable-line no-param-reassign
-    socket.user = data.userID; // eslint-disable-line no-param-reassign
-    // grab the room using the player entered room ID
-    const result = rooms.filter(obj => obj.ID === room);
+    socket.user = data.userID;// eslint-disable-line no-param-reassign
+    // get current room from array of all rooms
+    const currentRoomArray = rooms.filter(obj => obj.ID === room);
+    const currentRoom = currentRoomArray[0];
     // checks if room exists as to not error out
-    if (result[0] !== undefined) {
-      socket.join(result[0].ID);
-      console.log(`Joined room ${result[0].ID}`);
-    } else { // else just create the room and sets its ID to grab it from the array with no issues
+    if (currentRoom !== undefined) {
+      // don't join if game is in session
+      if (currentRoom.gameStarted === true) {
+        socket.to(socket.id).emit('failedToJoin');
+        return;
+      }
+      socket.join(currentRoom.ID);
+      console.log(`Joined room ${currentRoom.ID}`);
+    } else { // else create room and username holder
       rooms[rooms.length] = { ID: room };
+      // rooms[rooms.length].usernames = [];
       socket.join(room);
-      console.log(`Joined room ${room}`);
+      console.log(`${user} joined room ${room}`);
     }
-    join(data);
+    onJoined(data);
   });
   socket.on('update', (data) => {
     update(data);
@@ -237,15 +275,20 @@ io.sockets.on('connection', (socket) => {
     discPlayers(data);
   });
   socket.on('disconnect', () => {
-  // grab the room using the player entered room ID
-    const roomEntered = rooms.filter(obj => obj.ID === socket.room);
+  // get current room from array of all rooms
+    const currentRoomArray = rooms.filter(obj => obj.ID === socket.room);
     // check if in a room here because this disconnect is only called once, the other possibly more
-    // decriment users
-    if (roomEntered[0] != null) {
-      roomEntered[0].users--;
+    // decriment numUsers
+    if (currentRoomArray[0] != null) {
+      // purge user from array
+      currentRoomArray[0].usernames.filter(obj => obj.ID === socket.user).pop();
       const data = { roomID: socket.room, userID: socket.user };
       discPlayers(data);
     }
+  });
+
+  socket.on('startNewGame', (data) => {
+    startNewGame(data);
   });
   socket.on('startGame', (data) => {
     startGame(data);
@@ -254,11 +297,8 @@ io.sockets.on('connection', (socket) => {
     processGuess(data);
   });
   socket.on('sendScore', (data) => {
-    processScores(data);
+    getLeaderboard(data);
   });
-  // useInk server side later
 });
 
 console.log('Websocket server started');
-
-// A few things to be cleaned up: transitions, timer, hashing to grab users

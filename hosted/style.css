@@ -1,0 +1,211 @@
+        label, span{
+        font-family: Verdana, Roboto, sans-serif;
+      	font-size: 16px;
+      	padding-right:2em;
+        padding-left:2em;
+      }
+        body{
+            background-color: #73AD21;       
+        }
+
+        select, input{
+            background-color: #d3d3d3;
+            font-family: Verdana, Roboto, sans-serif;
+        }
+        p{
+            font-family: Roboto, Arial, sans-serif;
+            padding-bottom: 0;
+            margin-bottom: 0; 
+            font-weight: 900;
+        }   
+        #startGame{
+            position: fixed;
+            font-size: 40px;
+            z-index: 101;
+            left: 42%;
+            top: 35%;
+        }
+        
+        #voterText{
+            font-family: Roboto, Arial, sans-serif;
+            position: fixed;
+            font-size: 200%;
+            z-index: 103;
+            left: 35%;
+            top: 90%;
+        }
+        
+        #guessText{
+            border: 2px solid black;
+            border-radius: 4px;
+            font-size: 30px;
+            position: fixed;
+            left: 85%;
+            top: 80%;
+        }
+        
+        #guessButton{
+            font-size: 40px;
+            position: fixed;
+            left: 85%;
+            top: 87%;
+        }
+
+        #lobbyScreen{
+            width: 100%;
+            height: 100%;
+            background-color:#73AD21;
+            position: fixed;
+            padding: 0;
+            margin: 0;
+            top: 0;
+            left: 0;
+            z-index: 100;
+            display: none;
+        }
+        
+        #lobbyText{
+            font-family: Roboto, Arial, sans-serif;
+            position: fixed;
+            font-size: 400%;
+            z-index: 101;
+            left: 15%;
+            top: 15%;
+            display: none;
+        }
+        
+        #lobbySubtext{
+            border-radius: 25px;
+            background: #FFFFFF;
+            font-family: Roboto, Arial, sans-serif;
+            position: fixed;
+            font-size: 300%;
+            z-index: 101;
+            left: 15%;
+            top: 30%;
+            display: none;
+        }
+        
+        #advertisment{
+            font-family: Roboto, Arial, sans-serif;
+            position: fixed;
+            font-size: 300%;
+            left: 15%;
+            top: 45%;
+            height: 30%;
+            width: 60%;
+            display: none;
+            background-color: crimson;
+        }
+        
+        #roomSelectScreen{
+            width: 100%;
+            height: 100%;
+            background-color:#73AD21;
+            position: fixed;
+            padding: 0;
+            margin: 0;
+            top: 0;
+            left: 0;
+            z-index: 102;
+        }
+        
+        #room{
+            position: fixed;
+            margin-left: 20px;
+            font-size: 30px;
+            z-index: 103;
+            left: 35%;
+            top: 60%;
+        }
+        
+        #roomEnter{
+            position: fixed;
+            font-size: 30px;
+            z-index: 103;
+            left: 59%;
+            top: 60%;
+        }
+        
+        #username{
+            position: fixed;
+            margin-left: 20px;
+            font-size: 30px;
+            z-index: 103;
+            left: 35%;
+            top: 50%;
+        }
+        
+        #titleText{
+            border-radius: 25px;
+            background: #FFFFFF;
+            height: 100px;
+            font-family: Roboto, Arial, sans-serif;
+            position: fixed;
+            font-size: 400%;
+            z-index: 103;
+            left: 25%;
+            top: 15%;
+        }
+        
+        #titleSubtext{
+            border-radius: 25px;
+            background: #FFFFFF;
+            height: 50px;
+            font-family: Roboto, Arial, sans-serif;
+            position: fixed;
+            font-size: 250%;
+            z-index: 103;
+            left: 20%;
+            top: 30%;
+        }
+
+        #startNewGame{
+            left: 80%;
+            top: 80%;
+            position: fixed;
+            font-size: 40px;
+            z-index: 101;
+        }
+        
+        #firstCanvas, #secondCanvas{
+            top:-600px;
+            left:300px;
+            transition: transform 1.5s ease-in-out;
+            position: absolute;
+            visibility: hidden;
+        }
+        
+        #canvas{
+            top:150px;
+            left:300px;
+        }
+        
+        #firstText, #secondText{
+            visibility: hidden;
+        }
+
+        #countdownTimer{
+            top:-50px;
+            left:1200px;
+            transition: transform .9s ease-in-out;
+            position: absolute;
+            visibility: hidden;
+        }
+        
+        #inkwell{
+            width:900px;
+        }
+        
+        #correctUsers{
+            position: fixed;
+            left: 1200px;
+            top: 40px;
+        }
+        
+        #answer{
+            font-family: Roboto, Arial, sans-serif;
+            position: relative;
+            font-size: 400%;
+            display: none;
+        }

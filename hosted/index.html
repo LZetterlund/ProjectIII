@@ -1,207 +1,41 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <style>
-    label, span{
-        font-family: Verdana, Roboto, sans-serif;
-      	font-size: 16px;
-      	padding-right:2em;
-        padding-left:2em;
-      }
-        body{
-            background-color: #d3d3d3;       
-        }
-
-        select, input{
-            background-color: #d3d3d3;
-            font-family: Verdana, Roboto, sans-serif;
-        }
-        p{
-            font-family: Roboto, Arial, sans-serif;
-            padding-bottom: 0;
-            margin-bottom: 0; 
-            font-weight: 900;
-        }
-        .highlightedPlayer{
-            border-width: 75px;
-            border-style: double;
-            visibility: visible;
-        }
-        .backgroundPlayer{
-            visibility: hidden;
-        }
-        .countdownText{
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-        }
-        
-        #startGame{
-            position: fixed;
-            font-size: 40px;
-            z-index: 101;
-            left: 42%;
-            top: 35%;
-        }
-        
-        #voterText{
-            font-family: Roboto, Arial, sans-serif;
-            position: fixed;
-            font-size: 250%;
-            z-index: 103;
-            left: 35%;
-            top: 50%;
-        }
-        
-        #guessText{
-            font-size: 30px;
-            position: fixed;
-            left: 35%;
-            top: 65%;
-        }
-        
-        #guessButton{
-            font-size: 40px;
-            position: fixed;
-            left: 59%;
-            top: 65%;
-        }
-
-        #lobbyScreen{
-            width: 100%;
-            height: 100%;
-            background-color:aqua;
-            position: fixed;
-            padding: 0;
-            margin: 0;
-            top: 0;
-            left: 0;
-            z-index: 100;
-            display: none;
-        }
-        
-        #lobbyText{
-            font-family: Roboto, Arial, sans-serif;
-            position: fixed;
-            font-size: 400%;
-            z-index: 101;
-            left: 15%;
-            top: 15%;
-            display: none;
-        }
-        
-        #lobbySubtext{
-            font-family: Roboto, Arial, sans-serif;
-            position: fixed;
-            font-size: 300%;
-            z-index: 101;
-            left: 15%;
-            top: 30%;
-            display: none;
-        }
-        
-        #advertisment{
-            font-family: Roboto, Arial, sans-serif;
-            position: fixed;
-            font-size: 300%;
-            left: 15%;
-            top: 45%;
-            height: 30%;
-            width: 60%;
-            display: none;
-            background-color: crimson;
-        }
-        
-        #roomSelectScreen{
-            width: 100%;
-            height: 100%;
-            background-color:darkturquoise;
-            position: fixed;
-            padding: 0;
-            margin: 0;
-            top: 0;
-            left: 0;
-            z-index: 102;
-        }
-        
-        #room{
-            position: fixed;
-            margin-left: 20px;
-            font-size: 30px;
-            z-index: 103;
-            left: 35%;
-            top: 50%;
-        }
-        
-        #roomEnter{
-            position: fixed;
-            font-size: 30px;
-            z-index: 103;
-            left: 59%;
-            top: 50%;
-        }
-        
-        #titleText{
-            font-family: Roboto, Arial, sans-serif;
-            position: fixed;
-            font-size: 400%;
-            z-index: 103;
-            left: 20%;
-            top: 20%;
-        }
-        
-        #titleSubtext{
-            font-family: Roboto, Arial, sans-serif;
-            position: fixed;
-            font-size: 250%;
-            z-index: 103;
-            left: 20%;
-            top: 30%;
-        }
-        
-        #player1Canvas, #player2Canvas{
-            
-        }
-        
-        #correctUsers{
-            position: fixed;
-            left: 950px;
-            top: 150px;
-        }
-        
-        #answer{
-            font-family: Roboto, Arial, sans-serif;
-            position: relative;
-            font-size: 400%;
-            display: none;
-        }
-    </style>
-    <script src="/socket.io/socket.io.js"></script>
+    <link rel="stylesheet" href="https://www.w3schools.com/w3css/4/w3.css">
+    <link rel="stylesheet" type="text/css" href="/assets/style.css">
+    <link href="https://fonts.googleapis.com/css?family=Roboto" rel="stylesheet">
+    <script src="./socket.io/socket.io.js"></script>
     <script src="https://npmcdn.com/babel-core@5.8.38/browser.min.js"></script>
     <script type="text/babel" >
         "use strict";
         let canvas = document.getElementById("canvas");
         let ctx = canvas.getContext("2d");
-        let player1Canvas = document.getElementById("player1Canvas");
-        let player1Ctx = player1Canvas.getContext("2d");
-        let player2Canvas = document.getElementById("player2Canvas");
-        let player2Ctx = player2Canvas.getContext("2d");
+        let firstCanvas = document.getElementById("firstCanvas");
+        let firstCtx = firstCanvas.getContext("2d");
+        let secondCanvas = document.getElementById("secondCanvas");
+        let secondCtx = secondCanvas.getContext("2d");
         let dragging = false;
-        let strokeStyleSelector = document.querySelector('#strokeStyleSelector');
-        let eraser = document.querySelector('#eraseButton');
         let user;
+        let isVoter = false;
+        let maxInk = 200;
+        let currentInk = maxInk;
+        let outOfInk = false;
+        let inkwell = document.getElementById("inkwell");
+        //make the first canvas to be shown first
+        let isFirstShown = false;
+        let secondHasBeenShown = false;
+        //html things
         let enterRoomButton = document.getElementById("roomEnter");
         let room;
         let roomTextBox = document.getElementById("room");
+        let userTextBox = document.getElementById("username");
         let startGameButton = document.getElementById("startGame");
+        let startNewGameButton = document.getElementById("startNewGame");
         let guess;
         let enterGuessButton = document.getElementById("guessButton");
         let guessTextBox = document.getElementById("guessText");
         let score;
         let correctUsersTextBox = document.getElementById("correctUsers");
-        let isVoter = false;
-        let currentInk = 500;
 
         const socket = io.connect();
 
@@ -216,7 +50,7 @@
             });
             
             socket.on('UI', (data) => {
-               setUI(data); 
+               resetUI(data); 
             });
             
             socket.on('doDisconnect', (data) => {
@@ -227,12 +61,16 @@
                failedToJoinGame(); 
             });
             
+            socket.on('newGame', (data) => {
+               prepareNewGame(data); 
+            });
+            
             socket.on('startCountdown', () => {
                startCountdown(5); 
             });
             
-            socket.on('changeHighlighted', (data) => {
-               changeHighlight(data); 
+            socket.on('nextDrawing', (data) => {
+               nextDrawing(data); 
             });
             
             socket.on('guessOutcome', (data) => {
@@ -261,7 +99,10 @@
         const failedToJoinGame = () => {
             console.log("Failed to join " + room);
             //reverse all UI changes, join failed
-            document.getElementById("room").disabled = false;
+            roomTextBox.disabled = false;
+            roomTextBox.style.display = "inline-block";
+            userTextBox.disabled = false;
+            userTextBox.style.display = "inline-block";
             document.getElementById("room").value = null;
             room = null;
             enterRoomButton.style.display = 'inline';
@@ -274,6 +115,13 @@
         //called when player attempts to join a room
         const enterRoom = () => {
             room = document.getElementById("room").value;
+            user = document.getElementById("username").value;
+            //if username field is left blank, default to username "Player"
+            if(user == "") {user = "Player";}
+            console.log("username: " + user);
+            //add numbers to the end to ensure seperate usernames
+            user = user + `${(Math.floor((Math.random()*10000)) + 1)}`;
+            console.log("username: " + user);
             console.log(room);
             if(room != null){
                 const data = { userID: user, roomID: room };
@@ -285,6 +133,8 @@
             document.getElementById("titleSubtext").style.display = "none";
             roomTextBox.disabled = true;
             roomTextBox.style.display = "none";
+            userTextBox.disabled = true;
+            userTextBox.style.display = "none";
             enterRoomButton.style.display = 'none';
             startGameButton.style.visibility = 'visible';
             document.getElementById("lobbyScreen").style.display = "block";
@@ -292,44 +142,93 @@
             document.getElementById("lobbySubtext").style.display = "inline";
         };
 
+        //prepares yourself and others for a new game
+        const startNewGame = () => {
+            const data = { userID: user, roomID: room };
+            socket.emit('startNewGame', data);
+        }
+
+        //called at the start of a new round to reset
+        const prepareNewGame = (data) => {
+            //some css stuff
+            startGameButton.style.visibility = "none";
+            enterRoomButton.style.display = 'none';
+            document.getElementById('voterText').style.display = "none";
+            document.getElementById("lobbyScreen").style.display = "block";  
+            document.getElementById("lobbyText").style.display = "inline";
+            document.getElementById("lobbySubtext").style.display = "inline";
+            startNewGameButton.style.visibility = "hidden";
+            document.getElementById("answer").style.display = "none";
+            document.getElementById("lobbyText").innerHTML = "Starting soon...";
+            guessTextBox.disabled = false;
+            guessTextBox.placeholder = "Enter Guess:";
+            //reset all canvases, ink, and view shifters
+            setCanvases();
+            //after everything reset send start new game request to server (IF YOU'RE THE ONE WHO SENT THE REQUEST)
+            if(data.userID == user){
+                startGame();
+            }
+        }
+
         //called when player hits start game in a lobby
         const startGame = () => {
             const data = { userID: user, roomID: room };
             socket.emit('startGame', data);
+            console.log("Sent start game request");
         };
 
         //the countdown called at the beginning of the game to signal a start
         const startCountdown = (currentNum) => {
-            var mainDiv = document.getElementById("mainDiv");
             if(currentNum > 0){
                 console.log(currentNum);
                 document.getElementById("lobbyText").innerHTML = "Starting in " + currentNum + "...";
                 currentNum--;
-                setTimeout(function(){ startCountdown(currentNum) }, 1500);
+                setTimeout(function(){ startCountdown(currentNum) }, 1000);
             }
             else{
                 document.getElementById("lobbyText").innerHTML = "Starting...";
             }
         };
 
-        const changeHighlight = (data) => {
+        //begins to throw down
+        const nextDrawing = (data) => {
+            //checks to see if the client is a voter
             if(isVoter == true){
-                //changes which player will be shown to the audience at a given time
-                if(player1Canvas.className == "highlightedPlayer"){
-                    player1Canvas.className = "backgroundPlayer";
-                    player2Canvas.className = "highlightedPlayer";
+                //if the first canvas isn't shown drop it into place
+                if(isFirstShown == false && secondHasBeenShown == false){
+                    firstCanvas.style.transform = "translate(0px, 750px)";
+                    firstCanvas.style.visibility = "visible";
+                    isFirstShown = true;
                 }
-                else{
-                    player2Canvas.className = "backgroundPlayer";
-                    player1Canvas.className = "highlightedPlayer";
+                //if the second canvas has been shown, but the first isn't on screen right now, rotate
+                else if(isFirstShown == false){
+                    secondCanvas.style.transform = "translate(-2000px, 750px)";
+                    firstCanvas.style.transform = "translate(0px, 750px)";
+                    firstCanvas.style.visibility = "visible";
+                    setTimeout(function(){secondCanvas.style.visibility = "hidden";
+                                         secondCanvas.style.transform = "translate(0, 0)";
+                                         }, 1500);
+                    isFirstShown = true;
                 }
+                //if the first canvas IS shown, slide it out of sight and drop the second canvas in
+                else {
+                    firstCanvas.style.transform = "translate(-2000px, 750px)";
+                    secondCanvas.style.transform = "translate(0px, 750px)";
+                    secondCanvas.style.visibility = "visible";
+                    setTimeout(function(){firstCanvas.style.visibility = "hidden";
+                                         firstCanvas.style.transform = "translate(0, 0)";
+                                         }, 1500);
+                    isFirstShown = false;
+                    secondHasBeenShown = true;
+                }
+                
                 guessTextBox.style.visibility = "visible";
                 enterGuessButton.style.visibility = "visible";
                 document.getElementById("voterText").style.visibility = "visible";
             }
             else{
                 document.getElementById("answer").style.display = "block";
-                document.getElementById("answer").innerHTML = "This round try to draw a " + data.answerID + "."
+                document.getElementById("answer").innerHTML = "You have to draw: " + data.answerID;
             }
             
             //TODO: get rid of lobby screen
@@ -354,49 +253,85 @@
                     console.log(score);
                 }
                 correctUsersTextBox.innerHTML += "<br>" + data.userID;
+                //TODO: add scrollable text box with all user's wrong answers
             }
         };
 
-        //TODO: Use this method to properly change the elements around on the screen to work
-        const setUI = (data) => {
-            console.log("IsPlayer1: " + data.player1 + ", " + "IsPlayer2: " + data.player2);
-            if(data.player1 == user) {
-                document.getElementById("playerRole").innerHTML = "You are Drawer 1.";
-                document.getElementById("lobbySubtext").innerHTML = "You are Drawer 1.";
+        //method to make sure canvases are not blank after game has started
+        const setCanvases = () => {
+            //fix canvases
+            firstCtx.fillStyle="white";
+            firstCtx.fillRect(0,0,900, 600);
+            
+            secondCtx.fillStyle="white";
+            secondCtx.fillRect(0,0,900, 600);
+            
+            ctx.fillStyle="white";
+            ctx.fillRect(0,0,900, 600);
+            //fix ink
+            currentInk = maxInk + 1;
+            useInk();
+            //fix rotating canvases
+            isFirstShown = false;
+            secondHasBeenShown = false;
+        }
+
+        //changing the UI so voters and drawers have seperate experiences
+        const resetUI = (data) => {
+            console.log("IsFirst: " + data.first + ", " + "IsSecond: " + data.second);
+            //check to see if this client is first or second
+            if(data.first == user) {
+                document.getElementById("playerRole").innerHTML = "You are a drawer.";
+                document.getElementById("lobbySubtext").innerHTML = "You are a drawer.<br>Remember to use your ink carefully, you don't have much!";
                 //remove voter elements
                 guessTextBox.style.display = "none";
                 guessTextBox.disabled = true;
                 enterGuessButton.style.display = "none";
-                player1Canvas.classList.remove("highlightedPlayer");
-                player2Canvas.classList.remove("backgroundPlayer");
-                player1Canvas.style.display = "none";
-                player2Canvas.style.display = "none";
-                document.getElementById("p1Text").style.display = "none";
-                document.getElementById("p2Text").style.display = "none";
+                firstCanvas.style.display = "none";
+                secondCanvas.style.display = "none";
+                document.getElementById("firstText").style.display = "none";
+                document.getElementById("secondText").style.display = "none";
+                //re-add drawing elements if new round and different role
+                canvas.style.display = "inline";
+                inkwell.style.display = "block";
+                isVoter = false;
             }
-            if(data.player2 == user) {
-                document.getElementById("playerRole").innerHTML = "You are Drawer 2.";
-                document.getElementById("lobbySubtext").innerHTML = "You are Drawer 2.";
+            //set screen to be this way if they are the second drawer
+            if(data.second == user) {
+                document.getElementById("playerRole").innerHTML = "You are a drawer.";
+                document.getElementById("lobbySubtext").innerHTML = "You are a drawer.<br>Remember to use your ink carefully, you don't have much!";
                 //remove voter elements
                 guessTextBox.style.display = "none";
                 guessTextBox.disabled = true;
                 enterGuessButton.style.display = "none";
-                player1Canvas.classList.remove("highlightedPlayer");
-                player2Canvas.classList.remove("backgroundPlayer");
-                player1Canvas.style.display = "none";
-                player2Canvas.style.display = "none";
-                document.getElementById("p1Text").style.display = "none";
-                document.getElementById("p2Text").style.display = "none";
+                firstCanvas.style.display = "none";
+                secondCanvas.style.display = "none";
+                document.getElementById("firstText").style.display = "none";
+                document.getElementById("secondText").style.display = "none";
+                //re-add drawing elements if new round and different role
+                canvas.style.display = "inline";
+                inkwell.style.display = "block";
+                isVoter = false;
             }
-            if(data.player1 != user && data.player2 != user) {
-                document.getElementById("playerRole").innerHTML = "You are a viewer/voter.";
-                document.getElementById("lobbySubtext").innerHTML = "You are a viewer/voter.";
+            //set this screen if they are a voter
+            if(data.first != user && data.second != user) {
+                document.getElementById("playerRole").innerHTML = "You are a voter.";
+                document.getElementById("lobbySubtext").innerHTML = "You are a voter.<br>Try to guess what the drawers are inking up!<br>You get two seperate drawings to look at!";
+                document.getElementById("firstText").innerHTML = data.first + "'s Picture";
+                document.getElementById("secondText").innerHTML = data.second + "'s Picture";
+                //remove drawing elements
                 canvas.style.display = "none";
-                strokeStyleSelector.style.display = "none";
-                eraser.style.display = "none";
-                document.getElementById("strokeLabel").style.display = "none";
-                document.getElementById("eraserLabel").style.display = "none";
+                inkwell.style.display = "none";
                 isVoter = true;
+                setCanvases();
+                //re-add voter elements if new round and different role
+                guessTextBox.style.display = "inline-block";
+                guessTextBox.disabled = false;
+                enterGuessButton.style.display = "inline-block";
+                firstCanvas.style.display = "inline";
+                secondCanvas.style.display = "inline";
+                document.getElementById("firstText").style.display = "inline";
+                document.getElementById("secondText").style.display = "inline";
             }
             
             startGameButton.style.visibility = 'hidden';
@@ -423,13 +358,14 @@
             document.getElementById('voterText').style.display = "none";
             document.getElementById("lobbyScreen").style.display = "block";  
             document.getElementById("lobbyText").style.display = "block";
+            //TODO: where to put leaderboard
             document.getElementById("lobbyText").innerHTML = "The winner is... " + data.winnerID + "!";
             document.getElementById("lobbySubtext").style.display = "block";
             document.getElementById("lobbySubtext").innerHTML = "With a score of " + data.topScoreID + "!";
             document.getElementById("lobbySubtext").innerHTML += "<br><br>You were " + user + ", " + "and got a score of " + score;
             document.getElementById("lobbySubtext").innerHTML += "<br><br><br>THIS IS THE ADVERTISMENT PAGE!";
             document.getElementById("lobbySubtext").innerHTML += "<br><br>ADVERTISMENT HERE!";
-            //document.getElementById("advertisment").style.display = "block";
+            startNewGameButton.style.visibility = 'visible';
         };
 
         const handleMessage = (data) => {
@@ -438,20 +374,20 @@
             image.src = data.imgData;
 
             image.onload = () => {
-                console.log("player1Check: " + data.isPlayer1 + "player2Check: " + data.isPlayer2);
-                //displays the players drawings on only one canvas
-                if(data.isPlayer1 == true){
-                    player1Ctx.save();
-                    player1Ctx.globalCompositeOperation = "source-over"; //this is default for canvas-->
-                    player1Ctx.drawImage(image, data.x, data.y, data.width, data.height);    
-                    player1Ctx.restore();
+                console.log("firstCheck: " + data.isFirst + "secondCheck: " + data.isSecond);
+                //displays the drawers drawings on only one canvas
+                if(data.isFirst == true){
+                    firstCtx.save();
+                    firstCtx.globalCompositeOperation = "source-over"; //this is default for canvas-->
+                    firstCtx.drawImage(image, data.x, data.y, data.width, data.height);    
+                    firstCtx.restore();
                 }
                 else{ 
-                    if(data.isPlayer2 == true){
-                        player2Ctx.save();
-                        player2Ctx.globalCompositeOperation = "source-over"; //this is default for canvas-->
-                        player2Ctx.drawImage(image, data.x, data.y, data.width, data.height);    
-                        player2Ctx.restore();
+                    if(data.isSecond == true){
+                        secondCtx.save();
+                        secondCtx.globalCompositeOperation = "source-over"; //this is default for canvas-->
+                        secondCtx.drawImage(image, data.x, data.y, data.width, data.height);    
+                        secondCtx.restore();
                     }
                 }
             };
@@ -469,26 +405,36 @@
 		  canvas.onmouseout = doMouseout;
           enterRoomButton.onclick = enterRoom;
           startGameButton.onclick = startGame;
+          startNewGameButton.onclick = startNewGame;
           enterGuessButton.onclick = enterGuess;
+            //add the enter key as a way of entering text
           roomTextBox.addEventListener("keyup", function(e) {
               event.preventDefault();
               if(event.keyCode == 13) {
                   enterRoomButton.click();
               }
           });
+            //add the enter key as a way of entering text
           guessTextBox.addEventListener("keyup", function(e) {
               event.preventDefault();
               if(event.keyCode == 13) {
                   enterGuessButton.click();
               }
           });
-          user = `user${(Math.floor((Math.random()*100000)) + 1)}`;
+            //clear the scoreboard
           score = 0;
           connectSocket();
         };
 
     const useInk = () => {
-        //increment ink usage while player is dragging with mous down
+        //increment ink usage while player is dragging with mouse down
+        currentInk--;
+        if(currentInk <= 0) outOfInk = true;
+        
+        let ink = document.getElementById("emptyInk");
+        //change the inkwell's content
+        let width = currentInk / 2;
+        ink.style.width = width + '%';
     }
 
 	const doMousedown = (mouseData) => {
@@ -507,19 +453,16 @@
  	    //get location of mouse in canvas coordinates
  	    var mouse = getMouse(mouseData);
 
- 	      // set ctx.strokeStyle and ctx.lineWidth to correct values and switch if eraser
- 	      ctx.strokeStyle = strokeStyleSelector.value;
+ 	      ctx.strokeStyle = "black";
  	      ctx.lineWidth = 5;
-          if(eraser.checked == true) {
-              ctx.strokeStyle = "white";
-              ctx.lineWidth = 15;
-          }
 
  	      //draw a line to x,y of mouse
  	      ctx.lineTo(mouse.x, mouse.y);
 
+        if(outOfInk == false){
  	      //stroke the line
  	      ctx.stroke();
+        }
         
           //use Ink
         useInk();
@@ -531,8 +474,8 @@
             const data = {
                 x: 0,
                 y: 0,
-                height: 400,
-                width: 600, 
+                height: 600,
+                width: 900, 
                 imgData: canvas.toDataURL(),
                 userID: user,
                 roomID: room
@@ -546,8 +489,8 @@
         const data = {
                 x: 0,
                 y: 0,
-                height: 400,
-                width: 600, 
+                height: 600,
+                width: 900, 
                 imgData: canvas.toDataURL(),
                 userID: user,
                 roomID: room
@@ -570,8 +513,8 @@
         const data = {
                 x: 0,
                 y: 0,
-                height: 400,
-                width: 600, 
+                height: 600,
+                width: 900, 
                 imgData: canvas.toDataURL(),
                 userID: user,
                 roomID: room
@@ -587,25 +530,29 @@
     <p id="playerRole"></p>
     <p id="correctUsers" >Correct Guessers: </p>
     <canvas id="canvas" width="900" height="600" style="border: 1px solid black; display: inline;"></canvas><br/>
-            <label id="strokeLabel">
-            Stroke Color:
-            <select id="strokeStyleSelector">
-                <option value="black">Black</option>
-                <option value="red">Red</option>
-                <option value="green">Green</option>
-                <option value="blue">Blue</option>
-            </select>
-        </label>
-        <span id="eraserLabel">Eraser<input id="eraseButton" type="checkbox" value="Eraser"/></span>
+    
+    <div class="w3-container" id="inkwell" >
+        <h2>Remaining Ink</h2>
+        
+        <div class="w3-light-grey">
+            <div id="emptyInk" class="w3-black" style="height:40px;width:0"></div>
+        </div>
+    </div>
+    
     <h1 id="answer"></h1>
-    <p id="p1Text">Player 1's Drawing</p>
-    <canvas id="player1Canvas" class="highlightedPlayer" width="600" height="400" style="border: 1px solid black;"></canvas><br/>
-    <p id="p2Text">Player 2's Drawing</p>
-    <canvas id="player2Canvas" class="backgroundPlayer" width="600" height="400" style="border: 1px solid black;"></canvas><br/>
+    <p id="firstText"></p>
+    <canvas id="firstCanvas" width="900" height="600" style="border: 1px solid black;"></canvas><br/>
+    
+    <p id="secondText"></p>
+    <canvas id="secondCanvas" width="900" height="600" style="border: 1px solid black;"></canvas><br/>
+    
     <input type="text" id="guessText" placeholder="Enter guess:" style="visibility: hidden;">
     <input type="button" id="guessButton" value="Enter guess" style="visibility: hidden;">
     <h1 id="voterText"style="visibility: hidden;">What are the drawers attempting to draw?</h1>
     <input type="button" id="startGame" value="Start Game" style="visibility: hidden;">
+    <input type="button" id="startNewGame" value="One More Round!" style="visibility: hidden;">
+    
+    <h1 id="countdownTimer">6</h1>
     <div id="lobbyScreen"></div>
     <h1 id="lobbyText">When all players are ready hit Start Game!</h1>
     <h2 id="lobbySubtext"></h2>
@@ -614,7 +561,8 @@
     <h1 id="selectRoomDisplay"></h1>
     <input type="text" id="room" placeholder="Enter room name:">
     <input type="button" id="roomEnter" value="Lock into room">
-    <h1 id="titleText">Welcome to: Not a Jackbox Game!</h1>
-    <h2 id="titleSubtext">Enter room name and lock in to continue!</h2>
+    <input type="text" id="username" placeholder="Enter username (optional)" maxlength="12">
+    <h1 id="titleText">So Little Ink, So Little Time!</h1>
+    <h2 id="titleSubtext">Enter room name and username; lock in to continue!</h2>
 </body>
 </html>
