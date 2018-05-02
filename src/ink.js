@@ -4,9 +4,10 @@ const calculate = require('./calculate.js');
 const rooms = [];
 
 // when player joins game
-const onJoined = (data, sentIO) => {
+const onJoined = (data, sentIO, sock) => {
   // send the io
   const io = sentIO;
+  const socket = sock;
   // get current room from array of all rooms
   const currentRoomArray = rooms.filter(obj => obj.ID === data.roomID);
   const currentRoom = currentRoomArray[0];
@@ -14,6 +15,8 @@ const onJoined = (data, sentIO) => {
   if (currentRoom.lobbyInitiated === true) {
     console.log(`${data.userID} should not be in this lobby`);
     io.sockets.in(data.roomID).emit('lobbyHasStarted');
+    socket.leave(currentRoom.ID);
+      console.log(data.userID + " has been kicked from room " + data.roomID);
     return;
   }
   // if username array doesn't exist, create it
@@ -236,7 +239,7 @@ const connectSocketServer = (io) => {
         rooms[rooms.length] = { ID: room };
         socket.join(room);
       }
-      onJoined(data, sentIO);
+      onJoined(data, sentIO, socket);
     });
     socket.on('sendCanvas', (data) => {
       sendCanvas(data, sentIO);
