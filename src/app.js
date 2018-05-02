@@ -5,7 +5,7 @@ const express = require('express');
 const path = require('path');
 const ink = require('./ink.js');
 
-const port = process.env.PORT || process.env.NODE_PORT || 3127;
+const port = process.env.PORT || process.env.NODE_PORT || 3000;
 
 const app = express();
 
