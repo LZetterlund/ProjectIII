@@ -6,13 +6,13 @@
     "npm": "5.6.0"
   },
   "description": "",
-  "main": "index.js",
+  "main": "./src/app.js",
   "scripts": {
     "start": "node ./src/app.js",
     "pretest": "eslint ./src --fix",
     "test": "echo \"Tests complete\"",
-    "build": "babel ./client --out-file ./hosted/bundle.js",
-    "watch": "babel --watch ./client --out-file ./hosted/bundle.js",
+    "build": "babel ./client --out-file ./hosted/client.js",
+    "watch": "babel --watch ./client --out-file ./hosted/client.js",
     "nodemon": "nodemon --watch ./src ./src/app.js"
   },
   "repository": {

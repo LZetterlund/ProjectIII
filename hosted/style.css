@@ -18,40 +18,26 @@
             margin-bottom: 0; 
             font-weight: 900;
         }   
-        #startGame{
-            position: fixed;
-            font-size: 40px;
-            z-index: 101;
-            left: 42%;
-            top: 35%;
-        }
-        
-        #voterText{
-            font-family: Roboto, Arial, sans-serif;
-            position: fixed;
-            font-size: 200%;
-            z-index: 103;
-            left: 35%;
-            top: 90%;
-        }
         
         #guessText{
             border: 2px solid black;
             border-radius: 4px;
             font-size: 30px;
             position: fixed;
-            left: 85%;
+            left: 80%;
             top: 80%;
+            margin: 20px;
         }
         
         #guessButton{
             font-size: 40px;
             position: fixed;
-            left: 85%;
+            left: 80%;
             top: 87%;
+            margin: 20px;
         }
 
-        #lobbyScreen{
+        #gameCover{
             width: 100%;
             height: 100%;
             background-color:#73AD21;
@@ -64,7 +50,7 @@
             display: none;
         }
         
-        #lobbyText{
+        #loadingMessage{
             font-family: Roboto, Arial, sans-serif;
             position: fixed;
             font-size: 400%;
@@ -72,11 +58,13 @@
             left: 15%;
             top: 15%;
             display: none;
+            padding:20px;
         }
         
-        #lobbySubtext{
+        #instructions{
             border-radius: 25px;
             background: #FFFFFF;
+            padding: 20px;
             font-family: Roboto, Arial, sans-serif;
             position: fixed;
             font-size: 300%;
@@ -84,18 +72,6 @@
             left: 15%;
             top: 30%;
             display: none;
-        }
-        
-        #advertisment{
-            font-family: Roboto, Arial, sans-serif;
-            position: fixed;
-            font-size: 300%;
-            left: 15%;
-            top: 45%;
-            height: 30%;
-            width: 60%;
-            display: none;
-            background-color: crimson;
         }
         
         #roomSelectScreen{
@@ -115,16 +91,19 @@
             margin-left: 20px;
             font-size: 30px;
             z-index: 103;
-            left: 35%;
+            left: 25%;
             top: 60%;
+            margin: 20px;
+            padding:4px;
         }
         
         #roomEnter{
             position: fixed;
             font-size: 30px;
             z-index: 103;
-            left: 59%;
+            left: 49%;
             top: 60%;
+            margin: 20px;
         }
         
         #username{
@@ -132,40 +111,42 @@
             margin-left: 20px;
             font-size: 30px;
             z-index: 103;
-            left: 35%;
+            left: 25%;
             top: 50%;
         }
         
         #titleText{
             border-radius: 25px;
             background: #FFFFFF;
-            height: 100px;
+            padding 20px;
             font-family: Roboto, Arial, sans-serif;
             position: fixed;
             font-size: 400%;
             z-index: 103;
-            left: 25%;
+            left: 26%;
             top: 15%;
         }
         
         #titleSubtext{
             border-radius: 25px;
             background: #FFFFFF;
-            height: 50px;
+            padding: 15px;
+            margin: 20px;
             font-family: Roboto, Arial, sans-serif;
             position: fixed;
             font-size: 250%;
             z-index: 103;
-            left: 20%;
+            left: 25%;
             top: 30%;
         }
 
-        #startNewGame{
-            left: 80%;
+        #initiateNewRound{
+            left: 75%;
             top: 80%;
             position: fixed;
             font-size: 40px;
             z-index: 101;
+            padding: 30px;
         }
         
         #firstCanvas, #secondCanvas{
@@ -178,34 +159,93 @@
         
         #canvas{
             top:150px;
-            left:300px;
-        }
-        
-        #firstText, #secondText{
-            visibility: hidden;
+            left:500px;
+            position: absolute;
         }
 
         #countdownTimer{
-            top:-50px;
-            left:1200px;
-            transition: transform .9s ease-in-out;
+            border-radius: 25px;
+            background: #FFFFFF;
+            padding:10px;
+            top: 5%;
+            left:70%;
+            transition: transform .4s ease-in-out;
             position: absolute;
             visibility: hidden;
         }
         
         #inkwell{
-            width:900px;
+            /*width:900px;
+            position: relative;*/
         }
         
-        #correctUsers{
+        /*Attempt to make chat more readable*/
+        p:nth-child(even) {
+            border-radius: 25px;
+            background: #d3d3d3;
+            padding:10px;
+        }
+
+        #chatBox{
+            border-radius: 25px;
+            background: #FFFFFF;
+            padding:10px;
+            left: 80%;
+            top:10px;
+            width 150px;
+            height:75%;
+            float: right;
+            margin: 10px;
+            position: absolute;
+            overflow: scroll;
+            overflow-x: hidden;
+        }
+
+        #fakeVertisment{
+            border-radius: 25px;
+            background: #FFFFFF;
+            padding:10px;
+            left: 75%;
+            top:9%;
+            width 250px;
+            z-index: 101;
+            font-size: 200%;
+            height:60%;
+            float: right;
+            margin: 20px;
             position: fixed;
-            left: 1200px;
-            top: 40px;
+            display: none;
+        }
+
+        #leaderboard{
+            border-radius: 25px;
+            background: #FFFFFF;
+            padding: 10px;
+            font-family: Roboto, Arial, sans-serif;
+            position: absolute;
+            font-size: 250%;
+            z-index: 101;
+            left: 30%;
+            top: 10%;
+            display: none;
+            overflow: scroll;
+            overflow-x: hidden;
+            overflow-y: hidden;
         }
         
         #answer{
+            border-radius: 25px;
+            background: #FFFFFF;
+            padding:10px;
             font-family: Roboto, Arial, sans-serif;
-            position: relative;
-            font-size: 400%;
+            font-size: 250%;
             display: none;
+        }
+
+        #initiateLobby{
+            position: fixed;
+            font-size: 40px;
+            z-index: 101;
+            left: 42%;
+            top: 35%;
         }
