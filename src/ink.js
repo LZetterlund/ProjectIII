@@ -235,7 +235,6 @@ const connectSocketServer = (io) => {
       } else { // else create room and username holder
         rooms[rooms.length] = { ID: room };
         socket.join(room);
-        console.log(`${user} joined room ${currentRoom.ID}`);
       }
       onJoined(data, sentIO);
     });
