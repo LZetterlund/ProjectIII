@@ -16,7 +16,7 @@ const onJoined = (data, sentIO, sock) => {
     console.log(`${data.userID} should not be in this lobby`);
     io.sockets.in(data.roomID).emit('lobbyHasStarted');
     socket.leave(currentRoom.ID);
-      console.log(data.userID + " has been kicked from room " + data.roomID);
+    console.log(`${data.userID} has been kicked from room ${data.roomID}`);
     return;
   }
   // if username array doesn't exist, create it
